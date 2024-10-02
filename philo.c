@@ -1,3 +1,17 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   philo.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rgiambon <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/10/02 16:09:02 by rgiambon          #+#    #+#             */
+/*   Updated: 2024/10/02 17:45:10 by rgiambon         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "philo.h"
+
 int	arg_check(int argc, char **argv)
 {
 	int	i;
@@ -20,7 +34,7 @@ int	arg_check(int argc, char **argv)
 	return (1);
 }
 
-void	routine()
+void	routine(t_data *data)
 {
 }
 
@@ -53,12 +67,16 @@ int	make_threads(t_data *data)
 	i = 0;
 	while (i < data->philo_num)
 	{
-		pthread_join(threads[i], NULL);
+		if (pthread_join(threads[i], NULL) != 0)
+		{
+			free(data->threads);
+			return (0);
+		}
 		i++;
 	}
 	return (1);
 }
-		
+
 int	main(int argc, char **argv)
 {
 	t_data		data;
@@ -69,4 +87,5 @@ int	main(int argc, char **argv)
 		return (0);
 	if (!make_threads(&data))
 		return (0);
-	
+	free(data.threads);
+}
