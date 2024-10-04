@@ -6,7 +6,7 @@
 /*   By: rgiambon <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/02 16:09:02 by rgiambon          #+#    #+#             */
-/*   Updated: 2024/10/02 17:45:10 by rgiambon         ###   ########.fr       */
+/*   Updated: 2024/10/04 12:48:26 by rgiambon         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ int	arg_check(int argc, char **argv)
 		j = 0;
 		while (argv[i][j] != '\0')
 		{
-			if (argv[i][j] < '0' || argv[i][j] > '9')
+			if (argv[i][j] < '1' || argv[i][j] > '9')
 				return (0);
 			j++;
 		}
@@ -34,9 +34,72 @@ int	arg_check(int argc, char **argv)
 	return (1);
 }
 
+long	get_curr_time(struct timeval *start)
+{
+	struct timeval	curr_time;
+	long			milliseconds;
+	long			sec_diff;
+	long			microsec_diff;
+
+	gettimeofday(&curr_time, NULL);
+	sec_diff = curr_time.tv_sec - start->tv_sec;
+	microsec_diff = curr_time.tv_usec - start->tv_usec;
+	milliseconds = (sec_diff * 1000) + (microsec_diff / 1000);
+	return (milliseconds);
+}
+
+void	pick_up_forks(t_data *data, int philo_num)
+{
+	int	right;
+	int	left;
+
+	right = (data->index + 1) % data->philo_num;
+	left = data->index;
+	if (left < right)
+	{
+		pthread_mutex_lock(&data->philo[left].mutex);
+		printf("%lu %d has taken a fork\n", get_curr_time(&data->start_of_sim), philo_num);
+		pthread_mutex_lock(&data->philo[right].mutex);
+		printf("%lu %d has taken a fork\n", get_curr_time(&data->start_of_sim), philo_num);
+	}
+	else
+	{
+		pthread_mutex_lock(&data->philo[right].mutex);
+		printf("%lu %d has taken a fork\n", get_curr_time(&data->start_of_sim), philo_num);
+		pthread_mutex_lock(&data->philo[left].mutex);
+		printf("%lu %d has taken a fork\n", get_curr_time(&data->start_of_sim), philo_num);
+	}
+}
+
+void	put_down_forks(t_data *data)
+{
+	int	right;
+	int	left;
+
+	right = (data->index + 1) % data->philo_num;
+	left = data->index;
+	pthread_mutex_unlock(&data->philo[left].mutex);
+	pthread_mutex_unlock(&data->philo[right].mutex);
+}
+
 void	routine(t_data *data)
 {
+	int	philo_num;
 	
+	philo_num = data->philo[data->index].num;
+//put everything in a loop that finishes when philo dies
+//	*time* *x* is thinking
+	printf("%lu %d is thinking\n", get_curr_time(&data->start_of_sim), philo_num);
+//  mutex -> takes the forks based on position on table
+	pick_up_forks(data, philo_num);
+//philo eats
+	printf("%lu %d is eating\n", get_curr_time(&data->start_of_sim), philo_num);
+	usleep(data->time_to_eat * 1000);
+//puts down forks
+	put_down_forks(data);
+//philo sleeps
+	printf("%lu %d is sleeping\n", get_curr_time(&data->start_of_sim), philo_num);
+	usleep(data->time_to_sleep * 1000);
 }
 
 void	init_values(char **argv, t_data *data)
@@ -60,24 +123,35 @@ int	make_threads(t_data *data)
 {
 	int	i;
 
+	if (pthread_create(&data->monitor, NULL, monitor_routine, data) != 0)
+		return (0);
 	i = 0;
 	while (i < data->philo_num)
 	{
+		data->index = i;
 		if (pthread_create(&data->philo[i].th, NULL, routine, data) != 0)
-		{
-			free(data->threads);
 			return (0);
-		}
 		i++;
 	}
 	i = 0;
 	while (i < data->philo_num)
 	{
 		if (pthread_join(data->philo[i].th, NULL) != 0)
-		{
-			free(data->threads);
 			return (0);
-		}
+		i++;
+	}
+	return (1);
+}
+
+int	init_mutex(t_data *data)
+{
+	int	i;
+
+	i = 0;
+	while (i < data->philo_num)
+	{
+		if (pthread_mutex_init(&data->philo[i].mutex, NULL) != 0)
+			return (0);
 		i++;
 	}
 	return (1);
@@ -90,7 +164,9 @@ int	main(int argc, char **argv)
 	if (!arg_check(argc, argv))
 		return (0);
 	init_values(argv, &data);
-	pthreads_mutex_init(&data.mutex, NULL);
+	if (init_mutex(&data))
+		return (0);
+	gettimeofday(&data.start_of_sim);
 	if (!make_threads(&data))
 		return (0);
 	pthreads_mutex_destroy(&data.mutex, NULL);
