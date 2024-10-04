@@ -18,14 +18,22 @@
 # include <stdio.h>
 # include <sys/time.h>
 
+typedef struct s_philo
+{
+	pthread_t	th;
+	int		num;
+	struct timeval	start;
+	struct timeval	end;
+}	t_philo;
+
 typedef struct s_data
 {
-	pthread_t	*threads;
+	t_philo			*philo;
+	pthread_mutex_t	mutex;
 	int			philo_num;
 	int			time_to_die;
 	int			time_to_eat;
 	int			time_to_sleep;
-	int			forks;
 }	t_data;
 
 int		arg_check(int argc, char **argv);
