@@ -1,40 +1,29 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   philo.h                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: rgiambon <marvin@42.fr>                    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/02 16:10:12 by rgiambon          #+#    #+#             */
-/*   Updated: 2024/10/07 12:28:10 by rgiambon         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PHILO_H
 # define PHILO_H
 
 # include <stdlib.h>
 # include <pthread.h>
 # include <stdio.h>
+# include <unistd.h>
 # include <sys/time.h>
 
 typedef struct s_philo
 {
 	pthread_t		th;
-	pthread_t_mutex	fork;
+	pthread_mutex_t		fork;
 	int				num;
-	struct timeval	start;
-	struct timeval	end;
+	struct timeval		last_meal_time;
+	int		meals_eaten;
 }	t_philo;
 
 typedef struct s_data
 {
 	t_philo			*philo;
 	pthread_t		monitor;
-	pthread_t_mutex	is_dead;
-	pthread_t_mutex	time;
-	pthread_t_mutex	printer;
-	int				*index;
+	pthread_mutex_t	is_dead;
+	pthread_mutex_t	time;
+	pthread_mutex_t	printer;
+	int				index;
 	int				philo_num;
 	int				time_to_die;
 	int				time_to_eat;
@@ -45,7 +34,8 @@ typedef struct s_data
 }	t_data;
 
 int		arg_check(int argc, char **argv);
-int		init_values(char **argv, t_data *data);
+void		init_values(int argc, char **argv, t_data *data);
 int		make_threads(t_data *data);
-void	routine(t_data *data);
+void	*routine(void *arg);
+int     printer(char *s, t_data *data, int philo_num);
 #endif
