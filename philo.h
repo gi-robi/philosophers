@@ -20,6 +20,7 @@ typedef struct s_data
 {
 	t_philo			*philo;
 	pthread_t		monitor;
+	pthread_mutex_t philo_n;
 	pthread_mutex_t	is_dead;
 	pthread_mutex_t	time;
 	pthread_mutex_t	printer;
